@@ -22,9 +22,13 @@ class ReadmeGenerator:
         self.short_name = short_name.strip().replace('.', '').replace(' ', '%20')
 
     def write(self):
-        my_file = open(os.path.join(self.project_folder, 'README.md'), "w+")
-        my_file.write('![](' + self.base_url + self.project_folder + '/' + self.short_name + '_price.png)\n')
-        my_file.write('![](' + self.base_url + self.project_folder + '/' + self.short_name + '_hist.png)\n')
-        my_file.write('![](' + self.base_url + self.project_folder + '/' + self.short_name + '_prediction.png)\n')
-        my_file.write('![](' + self.base_url + self.project_folder + '/' + 'MSE.png)\n')
-        my_file.write('![](' + self.base_url + self.project_folder + '/' + 'loss.png)\n')
+        # Create directory if it doesn't exist yet
+        os.makedirs(self.project_folder, exist_ok=True)
+        
+        readme_path = os.path.join(self.project_folder, 'README.md')
+        with open(readme_path, "w+", encoding="utf-8") as my_file:
+            my_file.write('![](' + self.base_url + self.project_folder + '/' + self.short_name + '_price.png)\n')
+            my_file.write('![](' + self.base_url + self.project_folder + '/' + self.short_name + '_hist.png)\n')
+            my_file.write('![](' + self.base_url + self.project_folder + '/' + self.short_name + '_prediction.png)\n')
+            my_file.write('![](' + self.base_url + self.project_folder + '/' + 'MSE.png)\n')
+            my_file.write('![](' + self.base_url + self.project_folder + '/' + 'loss.png)\n')
