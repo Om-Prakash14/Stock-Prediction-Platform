@@ -1,0 +1,5 @@
+![](https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning/raw/master/^FTSE_20260818_d33b59002d7fb9cf8c4d200119c2cb95/FTSE%20100_price.png)
+![](https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning/raw/master/^FTSE_20260818_d33b59002d7fb9cf8c4d200119c2cb95/FTSE%20100_hist.png)
+![](https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning/raw/master/^FTSE_20260818_d33b59002d7fb9cf8c4d200119c2cb95/FTSE%20100_prediction.png)
+![](https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning/raw/master/^FTSE_20260818_d33b59002d7fb9cf8c4d200119c2cb95/MSE.png)
+![](https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning/raw/master/^FTSE_20260818_d33b59002d7fb9cf8c4d200119c2cb95/loss.png)
