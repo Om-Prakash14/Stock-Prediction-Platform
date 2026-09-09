@@ -251,7 +251,7 @@ with tab2:
                 if os.path.exists(csv_path):
                     df_preds = pd.read_csv(csv_path)
                     st.subheader("Historical Validation Predictions")
-                    st.dataframe(df_preds.tail(20), use_container_width=True)
+                    st.table(df_preds.tail(20))
                     
             except Exception as e:
                 st.error(f"Inference execution failed: {e}")
