@@ -4,6 +4,7 @@ import sys
 import subprocess
 import re
 import glob
+import json
 from datetime import datetime
 import pandas as pd
 from PIL import Image
@@ -32,10 +33,14 @@ tab1, tab2 = st.tabs(["🚀 Train New Model", "🔮 Run Inference & Forecast"])
 def get_trained_runs():
     folders = []
     for entry in os.scandir('.'):
-        if entry.is_dir() and not entry.name.startswith('.') and entry.name != 'venv' and entry.name != '__pycache__':
-            if os.path.exists(os.path.join(entry.path, 'model_config.json')):
+        if entry.is_dir() and not entry.name.startswith('.') and entry.name not in ['venv', '__pycache__', 'runs', '.github', '.idea']:
+            # Check for config file OR training artifacts (loss.png, README.md, etc.)
+            has_config = os.path.exists(os.path.join(entry.path, 'model_config.json'))
+            has_loss = os.path.exists(os.path.join(entry.path, 'loss.png'))
+            has_readme = os.path.exists(os.path.join(entry.path, 'README.md'))
+            if has_config or has_loss or has_readme:
                 folders.append(entry.name)
-    return sorted(folders)
+    return sorted(folders, reverse=True)
 
 with tab1:
     st.header("1. Model Training Parameters")
@@ -115,6 +120,26 @@ with tab1:
                     target_dir = max(matching_dirs, key=os.path.getmtime)
                     st.info(f"Visualizing results from: `{target_dir}`")
                     
+                    # Auto-generate model_config.json so Tab 2 can load hyperparameters
+                    config_payload = {
+                        "ticker": ticker,
+                        "start_date": start_date.strftime("%Y-%m-%d"),
+                        "validation_date": validation_date.strftime("%Y-%m-%d"),
+                        "epochs": int(epochs),
+                        "batch_size": int(batch_size),
+                        "time_steps": int(time_steps),
+                        "model_version": model_version,
+                        "forecast_horizon": int(forecast_horizon),
+                        "trend_window": int(trend_window),
+                        "use_returns": bool(use_returns),
+                        "use_deltas": model_version in ["v3", "v5", "v7"]
+                    }
+                    try:
+                        with open(os.path.join(target_dir, "model_config.json"), "w", encoding="utf-8") as cfg_file:
+                            json.dump(config_payload, cfg_file, indent=4)
+                    except Exception as err:
+                        st.warning(f"Note: Could not save model_config.json: {err}")
+                    
                     plots_to_show = ["loss.png", "MSE.png", "DataHistogram.png"]
                     for plot_name in plots_to_show:
                         plot_path = os.path.join(target_dir, plot_name)
@@ -143,10 +168,11 @@ with tab2:
         config_path = os.path.join(selected_run, "model_config.json")
         model_config = {}
         if os.path.exists(config_path):
-            import json
             with open(config_path, "r", encoding="utf-8") as f:
                 model_config = json.load(f)
             st.info(f"Model Configuration: {model_config}")
+        else:
+            st.info("ℹ️ Using default configuration inferred from folder metadata.")
             
         col1_inf, col2_inf = st.columns(2)
         
@@ -167,7 +193,7 @@ with tab2:
             start_date_val = pd.to_datetime(model_config.get("start_date", "2017-11-01"))
             validation_date_val = pd.to_datetime(model_config.get("validation_date", "2021-09-01"))
             time_steps_val = int(model_config.get("time_steps", 3))
-            use_returns_val = bool(model_config.get("use_returns", True))
+            use_returns_val = bool(model_config.get("use_returns", False))
             use_deltas_val = bool(model_config.get("use_deltas", True))
             
             token_parts = selected_run.split("_")
@@ -182,7 +208,7 @@ with tab2:
                     start_date=start_date_val,
                     validation_date=validation_date_val,
                     github_url="https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning/raw/master/",
-                    epochs=int(model_config.get("epochs", 100)),
+                    epochs=int(model_config.get("epochs", 10)),
                     time_steps=time_steps_val,
                     token=token_val,
                     batch_size=int(model_config.get("batch_size", 10)),
