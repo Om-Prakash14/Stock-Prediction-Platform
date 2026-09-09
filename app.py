@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import sys
 import subprocess
 import re
 import glob
@@ -29,11 +30,9 @@ tab1, tab2 = st.tabs(["🚀 Train New Model", "🔮 Run Inference & Forecast"])
 
 # Helper function to find trained run directories
 def get_trained_runs():
-    # Scan for directories starting with a ticker pattern or having model_config.json
     folders = []
     for entry in os.scandir('.'):
         if entry.is_dir() and not entry.name.startswith('.') and entry.name != 'venv' and entry.name != '__pycache__':
-            # Check if model_config.json exists inside the folder
             if os.path.exists(os.path.join(entry.path, 'model_config.json')):
                 folders.append(entry.name)
     return sorted(folders)
@@ -58,7 +57,6 @@ with tab1:
         forecast_horizon = st.number_input("Forecast Horizon", min_value=1, max_value=100, value=10)
         trend_window = st.number_input("Trend Window", min_value=1, max_value=200, value=60)
         
-    # v3, v5, v7 are delta models, v6 is trend-residual model. These cannot be combined with Log Returns.
     is_delta_or_residual = model_version in ["v3", "v5", "v6", "v7"]
     use_returns = st.checkbox(
         "Use Log Returns", 
@@ -70,9 +68,9 @@ with tab1:
     if st.button("🔥 Start Training Model", use_container_width=True):
         st.subheader("Training Console Logs")
         
-        # Prepare command
+        # Prepare command using sys.executable (cross-platform compatible)
         cmd = [
-            "C:\\Users\\OM PRAKSH NANDA\\v\\Scripts\\python.exe",
+            sys.executable,
             "stock_prediction_deep_learning.py",
             "-ticker", ticker,
             "-start_date", start_date.strftime("%Y-%m-%d"),
@@ -110,28 +108,19 @@ with tab1:
             if return_code == 0:
                 st.success("🎉 Training completed successfully!")
                 
-                # Find output folder
-                # The folder name format in stock_prediction_deep_learning.py is Ticker_Date_Token
-                # Let's search for the folder matching this pattern that was just created
                 pattern = f"{ticker}_*"
                 matching_dirs = glob.glob(pattern)
                 
                 if matching_dirs:
-                    # Get the most recently created matching directory
                     target_dir = max(matching_dirs, key=os.path.getmtime)
                     st.info(f"Visualizing results from: `{target_dir}`")
                     
-                    # Look for and display generated plots
                     plots_to_show = ["loss.png", "MSE.png", "DataHistogram.png"]
-                    
-                    # Display standard training plots
                     for plot_name in plots_to_show:
                         plot_path = os.path.join(target_dir, plot_name)
                         if os.path.exists(plot_path):
                             st.image(Image.open(plot_path), caption=f"{plot_name} ({target_dir})")
                             
-                    # Display the final prediction plot (e.g. predictions.png or a custom name containing prediction)
-                    # Let's list files in the directory and find any png file
                     for file in os.listdir(target_dir):
                         if file.endswith("prediction.png") or file.endswith("predictions.png"):
                             st.image(Image.open(os.path.join(target_dir, file)), caption=f"Prediction Fit: {file}")
@@ -144,7 +133,6 @@ with tab1:
 with tab2:
     st.header("2. Run Inference and Future Forecast")
     
-    # Refresh runs
     trained_runs = get_trained_runs()
     
     if not trained_runs:
@@ -152,7 +140,6 @@ with tab2:
     else:
         selected_run = st.selectbox("Select Trained Run Folder", trained_runs)
         
-        # Load the configuration of the selected model run
         config_path = os.path.join(selected_run, "model_config.json")
         model_config = {}
         if os.path.exists(config_path):
@@ -176,7 +163,6 @@ with tab2:
         if st.button("🚀 Run Future Predictions", use_container_width=True):
             st.write("Running predictions...")
             
-            # Extract variables from run folder name or config
             ticker_from_folder = model_config.get("ticker", selected_run.split("_")[0])
             start_date_val = pd.to_datetime(model_config.get("start_date", "2017-11-01"))
             validation_date_val = pd.to_datetime(model_config.get("validation_date", "2021-09-01"))
@@ -184,12 +170,9 @@ with tab2:
             use_returns_val = bool(model_config.get("use_returns", True))
             use_deltas_val = bool(model_config.get("use_deltas", True))
             
-            # Extract token from the selected folder name
-            # Format: Ticker_Date_Token
             token_parts = selected_run.split("_")
             token_val = token_parts[-1] if len(token_parts) > 1 else "default"
             
-            # Import and execute InferenceRunner
             try:
                 from stock_prediction_deep_learning_inference import InferenceRunner
                 
@@ -218,13 +201,11 @@ with tab2:
                     stochastic_lookback=int(stochastic_lookback)
                 )
                 
-                # Execute in process (matplotlib is headless, so it won't block)
                 with st.spinner("Calculating forecast paths and plotting..."):
                     runner.run()
                 
                 st.success("🎉 Future forecast calculated!")
                 
-                # Display output forecast graph
                 forecast_image_name = f"{ticker_from_folder}_future_forecast.png"
                 forecast_image_path = os.path.join(selected_run, forecast_image_name)
                 
@@ -233,7 +214,6 @@ with tab2:
                 else:
                     st.warning("Forecast chart image could not be generated. Checking for forecast csv...")
                     
-                # Look for generated prediction values
                 csv_path = os.path.join(selected_run, "predictions.csv")
                 if os.path.exists(csv_path):
                     df_preds = pd.read_csv(csv_path)
