@@ -1,4 +1,6 @@
 absl-py
+streamlit
+Pillow
 matplotlib
 numpy
 pandas

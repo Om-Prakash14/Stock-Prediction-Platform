@@ -7,6 +7,8 @@ dependencies:
   - pip
   - pip:
       - absl-py
+      - streamlit
+      - Pillow
       - matplotlib
       - numpy
       - pandas

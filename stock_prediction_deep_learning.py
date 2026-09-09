@@ -195,7 +195,7 @@ def train_LSTM_network(stock, use_returns=False, model_version='v7', forecast_ho
     predictions_df.to_csv(os.path.join(stock.get_project_folder(), 'predictions.csv'))
     plotter.project_plot_predictions(predictions_df, test_data)
 
-    generator = ReadmeGenerator(stock.get_github_url(), stock.get_token(), data.get_stock_short_name())
+    generator = ReadmeGenerator(stock.get_github_url(), stock.get_project_folder(), data.get_stock_short_name())
     generator.write()
 
     print("prediction is finished")
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     GITHUB_URL = args.github_url
     print('Ticker: ' + STOCK_TICKER)
     print('Start Date: ' + STOCK_START_DATE.strftime("%Y-%m-%d"))
-    print('Validation Date: ' + STOCK_START_DATE.strftime("%Y-%m-%d"))
+    print('Validation Date: ' + STOCK_VALIDATION_DATE.strftime("%Y-%m-%d"))
     print('Test Run Folder: ' + TOKEN)
     # create project run folder
     PROJECT_FOLDER = os.path.join(os.getcwd(), 'runs', TOKEN)

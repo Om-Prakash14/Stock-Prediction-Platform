@@ -32,14 +32,17 @@ tab1, tab2 = st.tabs(["🚀 Train New Model", "🔮 Run Inference & Forecast"])
 # Helper function to find trained run directories
 def get_trained_runs():
     folders = []
-    for entry in os.scandir('.'):
-        if entry.is_dir() and not entry.name.startswith('.') and entry.name not in ['venv', '__pycache__', 'runs', '.github', '.idea']:
+    runs_root = os.path.join(os.getcwd(), 'runs')
+    if not os.path.isdir(runs_root):
+        return folders
+    for entry in os.scandir(runs_root):
+        if entry.is_dir() and not entry.name.startswith('.'):
             # Check for config file OR training artifacts (loss.png, README.md, etc.)
             has_config = os.path.exists(os.path.join(entry.path, 'model_config.json'))
             has_loss = os.path.exists(os.path.join(entry.path, 'loss.png'))
             has_readme = os.path.exists(os.path.join(entry.path, 'README.md'))
             if has_config or has_loss or has_readme:
-                folders.append(entry.name)
+                folders.append(os.path.join('runs', entry.name))
     return sorted(folders, reverse=True)
 
 with tab1:
@@ -113,7 +116,7 @@ with tab1:
             if return_code == 0:
                 st.success("🎉 Training completed successfully!")
                 
-                pattern = f"{ticker}_*"
+                pattern = os.path.join("runs", f"{ticker}_*")
                 matching_dirs = glob.glob(pattern)
                 
                 if matching_dirs:
@@ -132,7 +135,8 @@ with tab1:
                         "forecast_horizon": int(forecast_horizon),
                         "trend_window": int(trend_window),
                         "use_returns": bool(use_returns),
-                        "use_deltas": model_version in ["v3", "v5", "v7"]
+                        "use_deltas": model_version in ["v3", "v5", "v7"],
+                        "use_trend_residual": model_version == "v6"
                     }
                     try:
                         with open(os.path.join(target_dir, "model_config.json"), "w", encoding="utf-8") as cfg_file:
@@ -140,7 +144,10 @@ with tab1:
                     except Exception as err:
                         st.warning(f"Note: Could not save model_config.json: {err}")
                     
-                    plots_to_show = ["loss.png", "MSE.png", "DataHistogram.png"]
+                    plots_to_show = ["loss.png", "MSE.png"]
+                    for plot_name in os.listdir(target_dir):
+                        if plot_name.endswith("_hist.png"):
+                            plots_to_show.append(plot_name)
                     for plot_name in plots_to_show:
                         plot_path = os.path.join(target_dir, plot_name)
                         if os.path.exists(plot_path):
@@ -189,14 +196,14 @@ with tab2:
         if st.button("🚀 Run Future Predictions", use_container_width=True):
             st.write("Running predictions...")
             
-            ticker_from_folder = model_config.get("ticker", selected_run.split("_")[0])
+            ticker_from_folder = model_config.get("ticker", os.path.basename(selected_run).split("_")[0])
             start_date_val = pd.to_datetime(model_config.get("start_date", "2017-11-01"))
             validation_date_val = pd.to_datetime(model_config.get("validation_date", "2021-09-01"))
             time_steps_val = int(model_config.get("time_steps", 3))
             use_returns_val = bool(model_config.get("use_returns", False))
             use_deltas_val = bool(model_config.get("use_deltas", True))
             
-            token_parts = selected_run.split("_")
+            token_parts = os.path.basename(selected_run).split("_")
             token_val = token_parts[-1] if len(token_parts) > 1 else "default"
             
             try:
